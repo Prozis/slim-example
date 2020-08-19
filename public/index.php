@@ -3,6 +3,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 
+// php -S localhost:8080 -t public public/index.php
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория в которой будут храниться шаблоны
@@ -59,9 +60,12 @@ $app->post('/users', function ($request, $response) use ($repo) {
 $router = $app->getRouteCollector()->getRouteParser();
 
 $app->get('/', function ($request, $response) use ($router) {
-    //$router->urlFor('users'); // /users
-    //$router->urlFor('user', ['id' => 4]); // /users/4
-    $params = [];
+
+    $params = [
+      'users' => $router->urlFor('users'), // /users
+      //'user' => $router->urlFor('user', ['id' => 4]), // /users/4
+      'userNew' => $router->urlFor('userNew')
+    ];
     return $this->get('renderer')->render($response, "index.phtml", $params);
     //return $response->write('Welcome slim');
 });
