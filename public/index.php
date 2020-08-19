@@ -11,35 +11,59 @@ $container->set('renderer', function () {
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 
-$app->get('/', function ($request, $response) {
-    return $response->write('Welcome slim');
-});
-$app->get('/users/{id}', function ($request, $response, $args) {
-    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    // $this в Slim это контейнер зависимостей
-    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-});
+
 
 $app->get('/users', function ($request, $response) {
     $term = $request->getQueryParam('term');
+    $users = json_decode(file_get_contents('users.txt'));
     $params = [
       'users' => ['mike', 'mishel', 'adel', 'keks', 'kamila'],
       'term' => $term
     ];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
+})->setName('users');
+
+$app->get('/users/new', function ($request, $response) {
+    $params = [
+        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+})->setName('userNew');
+
+$app->get('/users/{id}', function ($request, $response, $args) {
+    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
+    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
+    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
+    // $this в Slim это контейнер зависимостей
+
+    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+})->setName('user');
+
+$app->post('/users', function ($request, $response) use ($repo) {
+    $validator = new Validator();
+    $user = $request->getParsedBodyParam('user');
+    $errors = $validator->validate($user);
+    if (count($errors) === 0) {
+        //$repo->save($user);
+        file_put_contents ('users.txt', json_encode($user));
+        return $response->withRedirect('/users', 302);
+    }
+    $params = [
+        'user' => $user,
+        'errors' => $errors
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
 
+$router = $app->getRouteCollector()->getRouteParser();
 
-
-$app->post('/users', function ($request, $response) {
-    return $response->withStatus(302);
+$app->get('/', function ($request, $response) use ($router) {
+    //$router->urlFor('users'); // /users
+    //$router->urlFor('user', ['id' => 4]); // /users/4
+    $params = [];
+    return $this->get('renderer')->render($response, "index.phtml", $params);
+    //return $response->write('Welcome slim');
 });
-
-// $app->get('/courses/{id}', function ($request, $response, array $args) {
-//     $id = $args['id'];
-//     return $response->write("Course id: {$id}");
-// });
 
 $app->run();
