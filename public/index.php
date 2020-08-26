@@ -2,9 +2,12 @@
 require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
+session_start();
 
-// php -S localhost:8080 -t public public/index.php
 $container = new Container();
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
 $container->set('renderer', function () {
     // Параметром передается базовая директория в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
@@ -12,17 +15,32 @@ $container->set('renderer', function () {
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 
+//$validator = new Validator();
+
+function validate($user)
+{
+    $errors = [];
+    if (empty($user['name'])) {
+        $errors['name'] = "Can't be blank";
+    }
+    return $errors;
+}
+
+//$errors = $validator->validate($user);
 
 
 $app->get('/users', function ($request, $response) {
     $term = $request->getQueryParam('term');
-    $users = json_decode(file_get_contents('users.txt'));
+    $users = json_decode(file_get_contents('users.txt'), true);
+    $messages = $this->get('flash')->getMessages();
     $params = [
-      'users' => ['mike', 'mishel', 'adel', 'keks', 'kamila'],
+      'users' => $users,
+      'messages' => $messages,
       'term' => $term
     ];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
 })->setName('users');
+
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
@@ -31,6 +49,7 @@ $app->get('/users/new', function ($request, $response) {
     ];
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('userNew');
+
 
 $app->get('/users/{id}', function ($request, $response, $args) {
     $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
@@ -41,13 +60,18 @@ $app->get('/users/{id}', function ($request, $response, $args) {
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
 })->setName('user');
 
+
 $app->post('/users', function ($request, $response) use ($repo) {
-    $validator = new Validator();
+    //$validator = new Validator();
     $user = $request->getParsedBodyParam('user');
-    $errors = $validator->validate($user);
+    $errors = validate($user);
+
     if (count($errors) === 0) {
-        //$repo->save($user);
-        file_put_contents ('users.txt', json_encode($user));
+        //записываем нового пользователя в файл
+        $usersFromFile = json_decode(file_get_contents('users.txt'), true);
+        $usersFromFile[] = $user;
+        file_put_contents ('users.txt', json_encode($usersFromFile));
+        $this->get('flash')->addMessage('success', 'User added');
         return $response->withRedirect('/users', 302);
     }
     $params = [

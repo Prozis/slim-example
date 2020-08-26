@@ -1,4 +1,7 @@
-<form action="/users" method="post">
+
+<a href="/">Main page</a>
+<hr>
+<form action="/users" method="post" style="">
   <div>
     <label>
         Имя
@@ -45,6 +48,7 @@
     <?php if (isset($errors['city'])): ?>
       <div><?= $errors['city'] ?></div>
     <?php endif ?>
+
   </div>
   <input type="submit" value="Sign Up">
 </form>
