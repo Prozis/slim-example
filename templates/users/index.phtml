@@ -15,11 +15,22 @@
       <input type="submit" name="" value="Search">
     </form>
     <br>
-    <? var_dump($messages)?>
+
+      <? foreach($messages as $mesage){
+        foreach ($mesage as $key => $value) {
+          if ($key = "success") {
+            echo "<div style='background-color: green'>{$value}</div>";
+          }
+        }
+      }?>
+
+    <!-- <? var_dump($messages)?> -->
+      <!-- <? var_dump($users) ?> -->
 <table border="1">
   <tr><td>Name</td>
   <td>email</td>
   <td>city id</td></tr>
+
   <? foreach ($users as $user) {
     echo "
     <tr><td>{$user['name']}</td>

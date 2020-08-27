@@ -31,7 +31,11 @@ function validate($user)
 
 $app->get('/users', function ($request, $response) {
     $term = $request->getQueryParam('term');
-    $users = json_decode(file_get_contents('users.txt'), true);
+  // старый вариант с хранением пользователей в файле
+  //  $users = json_decode(file_get_contents('users.txt'), true);
+
+    // получаем список пользователей из Cookie
+    $users = json_decode($request->getCookieParam('users'), true);
     $messages = $this->get('flash')->getMessages();
     $params = [
       'users' => $users,
@@ -67,12 +71,17 @@ $app->post('/users', function ($request, $response) use ($repo) {
     $errors = validate($user);
 
     if (count($errors) === 0) {
-        //записываем нового пользователя в файл
-        $usersFromFile = json_decode(file_get_contents('users.txt'), true);
-        $usersFromFile[] = $user;
-        file_put_contents ('users.txt', json_encode($usersFromFile));
+        //старый вариант с запасбю нового пользователя в файл
+        //$usersFromFile = json_decode(file_get_contents('users.txt'), true);
+
+          //записываем нового пользователя в cookie
+        $usersCookieDecoded = json_decode($request->getCookieParam('users'), true);
+        $usersCookieDecoded[] = $user;
+      //  file_put_contents ('users.txt', json_encode($usersFromFile));
         $this->get('flash')->addMessage('success', 'User added');
-        return $response->withRedirect('/users', 302);
+        $usersCookieEncoded = json_encode($usersCookieDecoded);
+        return $response->withHeader('Set-Cookie', "users={$usersCookieEncoded}")
+        ->withRedirect('/users', 302);
     }
     $params = [
         'user' => $user,
