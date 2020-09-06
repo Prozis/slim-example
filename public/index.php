@@ -65,7 +65,7 @@ $app->get('/users/{id}', function ($request, $response, $args) {
 })->setName('user');
 
 
-$app->post('/users', function ($request, $response) use ($repo) {
+$app->post('/users', function ($request, $response) {
     //$validator = new Validator();
     $user = $request->getParsedBodyParam('user');
     $errors = validate($user);
